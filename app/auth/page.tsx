@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { AuthPanel } from "@/components/auth/panel";
 
 export default function AuthPage() {
@@ -9,7 +11,15 @@ export default function AuthPage() {
       </p>
 
       <div className="mt-6">
-        <AuthPanel />
+        <Suspense
+          fallback={
+            <div className="rounded-2xl bg-surface p-4 ring-1 ring-border">
+              <div className="text-sm text-muted">Chargement…</div>
+            </div>
+          }
+        >
+          <AuthPanel />
+        </Suspense>
       </div>
     </div>
   );
