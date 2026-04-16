@@ -106,7 +106,19 @@ export async function POST(req: Request) {
   const uploadDir = path.join(process.cwd(), "public", "uploads", "videos");
   await mkdir(uploadDir, { recursive: true });
 
-  const usedBytes = await getDirectorySizeBytes(uploadDir);
+  let usedBytes = 0;
+  try {
+    usedBytes = await getDirectorySizeBytes(uploadDir);
+  } catch (err) {
+    const e = err as { name?: string; message?: string; code?: string };
+    console.error("watchtube: failed to compute uploads dir size", {
+      name: e?.name,
+      code: e?.code,
+      message: e?.message,
+    });
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  }
+
   if (usedBytes + file.size > MAX_TOTAL_BYTES) {
     return NextResponse.json(
       {
@@ -204,7 +216,14 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ video }, { status: 201 });
-  } catch {
+  } catch (err) {
+    const e = err as { name?: string; message?: string; code?: string };
+    console.error("watchtube: /api/videos upload failed", {
+      name: e?.name,
+      code: e?.code,
+      message: e?.message,
+    });
+
     try {
       await unlink(absoluteVideoPath);
     } catch {
