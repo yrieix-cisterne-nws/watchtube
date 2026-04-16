@@ -9,7 +9,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       BCRYPT_COST: ${BCRYPT_COST:-12}
-    command: sh -c "npx prisma migrate deploy && npm run start"
+      command: ["sh", "-c", "npx prisma migrate deploy && npm run start"]
     volumes:
       - ./data/uploads:/app/public/uploads
     networks:
