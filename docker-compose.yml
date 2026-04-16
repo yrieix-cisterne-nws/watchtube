@@ -9,14 +9,13 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       BCRYPT_COST: ${BCRYPT_COST:-12}
-      command: ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run start"]
     volumes:
       - ./data/uploads:/app/public/uploads
     networks:
       - traefik
     labels:
       - "traefik.enable=true"
-      # Port 3100 matches your app
       - "traefik.http.services.watchtube.loadbalancer.server.port=3100"
       - "traefik.http.routers.watchtube.rule=Host('watchtube.yrieix-cisterne.fr')"
       - "traefik.http.routers.watchtube.entrypoints=websecure"
