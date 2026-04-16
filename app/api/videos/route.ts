@@ -103,12 +103,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unsupported video type" }, { status: 415 });
   }
 
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "videos");
+  const userUploadRoot = path.join(
+    process.cwd(),
+    "public",
+    "uploads",
+    "users",
+    session.id,
+  );
+  const uploadDir = path.join(userUploadRoot, "videos");
   await mkdir(uploadDir, { recursive: true });
 
   let usedBytes = 0;
   try {
-    usedBytes = await getDirectorySizeBytes(uploadDir);
+    usedBytes = await getDirectorySizeBytes(userUploadRoot);
   } catch (err) {
     const e = err as { name?: string; message?: string; code?: string };
     console.error("watchtube: failed to compute uploads dir size", {
@@ -133,9 +140,9 @@ export async function POST(req: Request) {
 
   const filename = `${randomUUID()}${ext}`;
   const absoluteVideoPath = path.join(uploadDir, filename);
-  const publicVideoUrl = `/uploads/videos/${filename}`;
+  const publicVideoUrl = `/uploads/users/${session.id}/videos/${filename}`;
 
-  const thumbsDir = path.join(process.cwd(), "public", "uploads", "thumbs");
+  const thumbsDir = path.join(userUploadRoot, "thumbs");
   let absoluteThumbPath: string | null = null;
   let publicThumbUrl: string | null = null;
 
@@ -148,7 +155,7 @@ export async function POST(req: Request) {
     await mkdir(thumbsDir, { recursive: true });
     const thumbFilename = `${randomUUID()}${thumbExt}`;
     absoluteThumbPath = path.join(thumbsDir, thumbFilename);
-    publicThumbUrl = `/uploads/thumbs/${thumbFilename}`;
+    publicThumbUrl = `/uploads/users/${session.id}/thumbs/${thumbFilename}`;
   }
 
   try {
