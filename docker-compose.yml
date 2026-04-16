@@ -1,0 +1,30 @@
+services:
+  watchtube:
+    build: .
+    image: watchtube:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      BCRYPT_COST: ${BCRYPT_COST:-12}
+    command: sh -c "npx prisma migrate deploy && npm run start"
+    volumes:
+      - ./data/uploads:/app/public/uploads
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.services.watchtube.loadbalancer.server.port=3000"
+      - "traefik.http.routers.watchtube.rule=Host(`${WATCHTUBE_HOST}`)"
+      - "traefik.http.routers.watchtube.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.watchtube.tls=true"
+      # If you use a cert resolver in Traefik (Let's Encrypt), set it here.
+      - "traefik.http.routers.watchtube.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}

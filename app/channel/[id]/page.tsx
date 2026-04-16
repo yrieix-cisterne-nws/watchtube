@@ -1,16 +1,43 @@
+import { notFound, redirect } from "next/navigation";
+
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+type SearchParams = { [key: string]: string | string[] | undefined };
+
+type SortKey = "date" | "views";
+
+function normalizeSort(input: string | string[] | undefined): SortKey {
+  const v = Array.isArray(input) ? input[0] : input;
+  if (v === "views") return "views";
+  return "date";
+}
+
 export default async function ChannelByIdPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
+  const { sort } = await searchParams;
+  const sortKey = normalizeSort(sort);
 
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Channel</h1>
-      <p className="mt-2 text-muted">
-        Chaîne utilisateur (id): <span className="font-medium">{id}</span>
-      </p>
-    </div>
-  );
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { username: true },
+  });
+
+  if (!user) {
+    notFound();
+  }
+
+  const href =
+    sortKey === "views"
+      ? `/c/${encodeURIComponent(user.username)}?sort=views`
+      : `/c/${encodeURIComponent(user.username)}?sort=date`;
+
+  redirect(href);
 }

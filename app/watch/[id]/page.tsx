@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { VideoInteractions } from "@/components/videos/video-interactions";
@@ -123,7 +124,12 @@ export default async function WatchPage({
       </h1>
 
       <div className="mt-2 text-sm text-muted">
-        <span className="font-semibold text-foreground">{video.author.username}</span>
+        <Link
+          href={`/c/${encodeURIComponent(video.author.username)}`}
+          className="font-semibold text-foreground hover:underline"
+        >
+          {video.author.username}
+        </Link>
         <span className="mx-2">•</span>
         <span>{video.views} vues</span>
         <span className="mx-2">•</span>

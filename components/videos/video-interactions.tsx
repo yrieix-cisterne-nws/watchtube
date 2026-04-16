@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -343,7 +344,12 @@ export function VideoInteractions({
         <div className="mr-auto flex flex-wrap items-center gap-3">
           <div className="text-sm text-foreground">
             <span className="text-muted">Chaîne :</span>{" "}
-            <span className="font-semibold">{authorUsername}</span>
+            <Link
+              href={`/c/${encodeURIComponent(authorUsername)}`}
+              className="font-semibold hover:underline"
+            >
+              {authorUsername}
+            </Link>
             <span className="ml-2 text-xs text-muted">
               {subscribe.subscriberCount === 1
                 ? "1 abonné"
