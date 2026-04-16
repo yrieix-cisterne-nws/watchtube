@@ -32,7 +32,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
+ENV PORT=3100
+
+# Install OpenSSL and MySQL client libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Run as non-root
 USER node
@@ -45,6 +51,6 @@ COPY --chown=node:node --from=builder /app/prisma ./prisma
 COPY --chown=node:node --from=builder /app/.next ./.next
 COPY --chown=node:node --from=builder /app/node_modules ./node_modules
 
-EXPOSE 3000
+EXPOSE 3100
 
 CMD ["npm", "run", "start"]

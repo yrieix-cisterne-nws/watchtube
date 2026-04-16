@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: "3000"
+      PORT: "3100"
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       BCRYPT_COST: ${BCRYPT_COST:-12}
@@ -16,15 +16,12 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
-      - "traefik.http.services.watchtube.loadbalancer.server.port=3000"
-      - "traefik.http.routers.watchtube.rule=Host(`${WATCHTUBE_HOST}`)"
-      - "traefik.http.routers.watchtube.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
-      - "traefik.http.routers.watchtube.tls=true"
-      # If you use a cert resolver in Traefik (Let's Encrypt), set it here.
-      - "traefik.http.routers.watchtube.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      # Port 3100 matches your app
+      - "traefik.http.services.watchtube.loadbalancer.server.port=3100"
+      - "traefik.http.routers.watchtube.rule=Host('watchtube.yrieix-cisterne.fr')"
+      - "traefik.http.routers.watchtube.entrypoints=websecure"
+      - "traefik.http.routers.watchtube.tls.certresolver=letsenscrypt"
 
 networks:
   traefik:
     external: true
-    name: ${TRAEFIK_NETWORK:-traefik}
