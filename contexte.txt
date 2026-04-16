@@ -1,0 +1,45 @@
+Voici le contexte d'un projet d'application web de type plateforme web vidéo (clone YouTube). Mémorise ces informations pour m'assister sur ce projet :
+
+# Stack Technique
+- Framework : Next.js avec l'App Router (dossier app/)
+- Base de données : MariaDB gérée par Prisma ORM en version 7.7.0 stricte
+- Langage : TypeScript
+- Style : Tailwind CSS (avec un ThemeProvider pour le mode sombre/clair)
+
+# Fonctionnalités implémentées
+
+## Authentification & Utilisateurs
+- Inscription d'un nouvel utilisateur
+- Connexion (Login) avec gestion de session / JWT
+- Déconnexion (Logout)
+- Rafraîchissement du token (Refresh)
+- Récupération de l'utilisateur actuel (Me)
+
+## Vidéos
+- Upload de vidéos via une route dédiée
+- Page de lecture de vidéo (watch/[id])
+- Suppression de vidéos
+- Suivi du nombre de vues
+- Système de Like / Dislike sur les vidéos
+- Page regroupant les vidéos likées (liked/)
+- Flux d'actualité / Accueil (feed/) avec liste des vidéos
+- Recherche de vidéos (search/)
+
+## Interactions & Social
+- Système de commentaires sur les vidéos (affichage et ajout)
+- Canaux utilisateurs accessibles via l'ID (channel/[id]) ou un nom d'utilisateur (c/[username])
+- Système d'abonnement aux chaînes (Subscribe / Unsubscribe)
+
+## Interface Utilisateur
+- Barre de navigation globale (Navbar)
+- Barre latérale rétractable/dynamique (Sidebar & SidebarContext)
+- Composants clients interactifs (ClientLikeButton, ClientSubscribeButton, ClientComments, ClientDeleteVideoButton, VideoCard)
+
+## Administration
+- Tableau de bord minimal d'administration avec accès aux logs (admin/logs)
+
+# Instructions pour l'IA
+- Prends en compte l'intégralité de cette architecture pour tes réponses.
+- Garde impérativement à l'esprit que nous utilisons Prisma 7.7.0, tu dois utiliser la syntaxe et les méthodes compatibles avec cette version spécifique.
+- Les requêtes API backend sont structurées dans le dossier app/api/.
+- Les composants frontend client (marqués avec "use client") gèrent les interactions dynamiques (boutons, formulaires).

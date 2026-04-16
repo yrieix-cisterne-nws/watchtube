@@ -1,0 +1,181 @@
+// Prisma schema for WatchTube
+// MariaDB is supported via the `mysql` provider.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum NotificationType {
+  GENERIC
+  LIKE
+  COMMENT
+  SUBSCRIPTION
+  VIDEO
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String @unique
+  email    String @unique
+  password String
+  role     Role   @default(USER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  videos Video[]
+
+  comments Comment[]
+  likes    Like[]
+  logs     Log[]
+
+  notifications      Notification[] @relation("UserNotifications")
+  actedNotifications Notification[] @relation("ActorNotifications")
+
+  refreshTokens RefreshToken[]
+
+  subscriptions Subscription[] @relation("SubscriberSubscriptions")
+  subscribers   Subscription[] @relation("ChannelSubscriptions")
+
+  @@map("user")
+}
+
+model Video {
+  id          String  @id @default(uuid())
+  title       String
+  description String? @db.Text
+  thumbnail   String?
+  url         String
+  views       Int     @default(0)
+  duration    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  comments      Comment[]
+  likes         Like[]
+  notifications Notification[]
+
+  @@index([authorId])
+  @@map("video")
+}
+
+model Comment {
+  id      String @id @default(uuid())
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Comment?  @relation("CommentChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children Comment[] @relation("CommentChildren")
+
+  @@index([userId])
+  @@index([videoId])
+  @@index([parentId])
+  @@map("comment")
+}
+
+model Like {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+  @@map("like")
+}
+
+model Log {
+  id        String   @id @default(uuid())
+  action    String
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("log")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  message   String           @db.Text
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  userId String
+  user   User   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
+
+  videoId String?
+  video   Video?  @relation(fields: [videoId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([videoId])
+  @@map("notification")
+}
+
+model RefreshToken {
+  id        String @id @default(uuid())
+  tokenHash String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refreshtoken")
+}
+
+model Subscription {
+  id String @id @default(uuid())
+
+  subscriberId String
+  subscriber   User   @relation("SubscriberSubscriptions", fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   User   @relation("ChannelSubscriptions", fields: [channelId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([subscriberId, channelId])
+  @@index([channelId])
+  @@map("subscription")
+}
