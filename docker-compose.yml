@@ -1,12 +1,37 @@
 services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-watchtube}
+      MARIADB_USER: ${MARIADB_USER:-watchtube}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test:
+        ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - internal
+
   watchtube:
     build: .
     image: watchtube:latest
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: "3100"
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL:-mysql://${MARIADB_USER:-watchtube}:${MARIADB_PASSWORD}@db:3306/${MARIADB_DATABASE:-watchtube}}
       JWT_SECRET: ${JWT_SECRET}
       BCRYPT_COST: ${BCRYPT_COST:-12}
     command: ["sh", "-c", "npx prisma migrate deploy && npm run start"]
@@ -14,6 +39,7 @@ services:
       - ./data/uploads:/app/public/uploads
     networks:
       - traefik
+      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.watchtube.loadbalancer.server.port=3100"
@@ -21,6 +47,11 @@ services:
       - "traefik.http.routers.watchtube.entrypoints=websecure"
       - "traefik.http.routers.watchtube.tls.certresolver=letsenscrypt"
 
+volumes:
+  db_data:
+
 networks:
   traefik:
     external: true
+  internal:
+    driver: bridge
