@@ -35,6 +35,7 @@ type Props = {
   initialSubscribed: boolean;
   initialSubscriberCount: number;
   canInteract: boolean;
+  canDeleteComments: boolean;
 };
 
 function HeartIcon({ filled }: { filled: boolean }) {
@@ -118,6 +119,28 @@ function parseCommentPayload(v: unknown): CommentItem | null {
   return parseCommentItem(v.comment);
 }
 
+function parseCommentsPayload(v: unknown): CommentItem[] | null {
+  if (!isRecord(v)) return null;
+  if (!Array.isArray(v.comments)) return null;
+
+  const out: CommentItem[] = [];
+  for (const c of v.comments) {
+    const parsed = parseCommentItem(c);
+    if (parsed) out.push(parsed);
+  }
+  return out;
+}
+
+function countComments(items: CommentItem[]): number {
+  let total = 0;
+  for (const c of items) {
+    total += 1;
+    const replies = Array.isArray(c.replies) ? c.replies : [];
+    total += countComments(replies);
+  }
+  return total;
+}
+
 export function VideoInteractions({
   videoId,
   authorId,
@@ -129,6 +152,7 @@ export function VideoInteractions({
   initialSubscribed,
   initialSubscriberCount,
   canInteract,
+  canDeleteComments,
 }: Props) {
   const router = useRouter();
   const [like, setLike] = useState<LikeState>({
@@ -147,6 +171,7 @@ export function VideoInteractions({
   const [liking, setLiking] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const likeLabel = useMemo(() => {
@@ -338,6 +363,58 @@ export function VideoInteractions({
     }
   }
 
+  async function refreshComments() {
+    try {
+      const res = await fetch(`/api/videos/${videoId}/comments`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const json: unknown = await res.json().catch(() => null);
+      const payload = parseCommentsPayload(json);
+      if (!res.ok || !payload) return;
+
+      setComments(payload);
+      setCommentCount(countComments(payload));
+    } catch {
+      // ignore
+    }
+  }
+
+  async function deleteComment(commentId: string) {
+    if (!canDeleteComments) return;
+    if (!confirm("Supprimer ce commentaire ?")) return;
+
+    setError(null);
+    setDeletingCommentId(commentId);
+
+    try {
+      const res = await fetch(
+        `/api/videos/${videoId}/comments?commentId=${encodeURIComponent(commentId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+
+      if (res.status === 401) {
+        router.push("/auth");
+        return;
+      }
+
+      const json: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(getErrorMessage(json) ?? "Suppression impossible.");
+        return;
+      }
+
+      await refreshComments();
+    } catch {
+      setError("Erreur réseau.");
+    } finally {
+      setDeletingCommentId(null);
+    }
+  }
+
   return (
     <div className="mt-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -452,6 +529,17 @@ export function VideoInteractions({
                       Répondre
                     </button>
 
+                    {canDeleteComments ? (
+                      <button
+                        type="button"
+                        onClick={() => deleteComment(c.id)}
+                        className="text-xs font-semibold text-muted hover:text-foreground"
+                        disabled={Boolean(deletingCommentId) || posting}
+                      >
+                        {deletingCommentId === c.id ? "Suppression..." : "Supprimer"}
+                      </button>
+                    ) : null}
+
                     {isReplying ? (
                       <button
                         type="button"
@@ -511,6 +599,21 @@ export function VideoInteractions({
                           <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
                             {r.content}
                           </div>
+
+                          {canDeleteComments ? (
+                            <div className="mt-3 flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => deleteComment(r.id)}
+                                className="text-xs font-semibold text-muted hover:text-foreground"
+                                disabled={Boolean(deletingCommentId) || posting}
+                              >
+                                {deletingCommentId === r.id
+                                  ? "Suppression..."
+                                  : "Supprimer"}
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                     </div>

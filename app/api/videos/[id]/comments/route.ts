@@ -11,6 +11,10 @@ const createCommentSchema = z.object({
   parentId: z.string().min(1).max(64).optional(),
 });
 
+const deleteCommentSchema = z.object({
+  commentId: z.string().min(1).max(64),
+});
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -152,4 +156,69 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: videoId } = await params;
+  const session = await getSessionUser();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const parsed = deleteCommentSchema.safeParse({
+    commentId: url.searchParams.get("commentId"),
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid input", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const { commentId } = parsed.data;
+
+  const video = await prisma.video.findUnique({
+    where: { id: videoId },
+    select: { id: true, authorId: true },
+  });
+
+  if (!video) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (video.authorId !== session.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const comment = await prisma.comment.findFirst({
+    where: { id: commentId, videoId },
+    select: { id: true, parentId: true, userId: true },
+  });
+
+  if (!comment) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  await prisma.comment.delete({ where: { id: comment.id } });
+
+  await prisma.log.create({
+    data: {
+      action: "comment.delete",
+      details: JSON.stringify({
+        videoId,
+        commentId: comment.id,
+        deletedByUserId: session.id,
+        originalUserId: comment.userId,
+        parentId: comment.parentId,
+      }),
+      userId: session.id,
+    },
+  });
+
+  return NextResponse.json({ ok: true, deletedId: comment.id }, { status: 200 });
 }

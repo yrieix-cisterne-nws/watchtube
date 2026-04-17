@@ -168,6 +168,7 @@ export default async function WatchPage({
         initialSubscribed={subscribed}
         initialSubscriberCount={subscriberCount}
         canInteract={Boolean(session)}
+        canDeleteComments={session.id === video.author.id}
       />
     </div>
   );
