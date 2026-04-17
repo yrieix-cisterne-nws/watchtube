@@ -63,3 +63,27 @@ export async function GET(req: Request) {
     { status: 200 },
   );
 }
+
+export async function DELETE(_req: Request) {
+  const session = await getSessionUser();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const res = await prisma.notification.deleteMany({
+    where: { userId: session.id },
+  });
+
+  await prisma.log.create({
+    data: {
+      action: "notifications.clear_all",
+      details: JSON.stringify({ userId: session.id, deletedCount: res.count }),
+      userId: session.id,
+    },
+  });
+
+  return NextResponse.json(
+    { ok: true, deletedCount: res.count },
+    { status: 200 },
+  );
+}

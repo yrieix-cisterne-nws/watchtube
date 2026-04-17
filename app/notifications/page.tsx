@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ClearNotificationsButton } from "./clear-notifications-button";
 import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -38,8 +39,14 @@ export default async function NotificationsPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl pb-10">
-      <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Notifications</h1>
-      <p className="mt-2 text-muted">Likes, abonnements et nouvelles vidéos.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Notifications</h1>
+          <p className="mt-2 text-muted">Likes, abonnements et nouvelles vidéos.</p>
+        </div>
+
+        <ClearNotificationsButton disabled={notifications.length === 0} />
+      </div>
 
       {notifications.length === 0 ? (
         <div className="mt-6 rounded-2xl bg-surface p-6 text-sm text-foreground ring-1 ring-border">
