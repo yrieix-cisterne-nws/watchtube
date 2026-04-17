@@ -1,7 +1,38 @@
 import { VideoCard, type VideoCardData } from "@/components/video-card";
 import { prisma } from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
+import { connection } from "next/server";
 
-export const dynamic = "force-dynamic";
+const getSearchVideos = unstable_cache(
+  async (query: string) => {
+    return prisma.video.findMany({
+      where: {
+        OR: [
+          { title: { contains: query } },
+          { description: { contains: query } },
+          { author: { username: { contains: query } } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 48,
+      select: {
+        id: true,
+        title: true,
+        views: true,
+        duration: true,
+        thumbnail: true,
+        createdAt: true,
+        author: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
+  },
+  ["search"],
+  { revalidate: 30 },
+);
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
@@ -51,34 +82,13 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await connection();
+
   const { q } = await searchParams;
   const query = normalizeQ(q);
 
   const videos = query
-    ? await prisma.video.findMany({
-        where: {
-          OR: [
-            { title: { contains: query } },
-            { description: { contains: query } },
-            { author: { username: { contains: query } } },
-          ],
-        },
-        orderBy: { createdAt: "desc" },
-        take: 48,
-        select: {
-          id: true,
-          title: true,
-          views: true,
-          duration: true,
-          thumbnail: true,
-          createdAt: true,
-          author: {
-            select: {
-              username: true,
-            },
-          },
-        },
-      })
+    ? await getSearchVideos(query)
     : [];
 
   const items: VideoCardData[] = videos.map((v) => ({

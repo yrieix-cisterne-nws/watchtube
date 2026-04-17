@@ -1,11 +1,66 @@
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
+import { connection } from "next/server";
 
 import { VideoCard, type VideoCardData } from "../../components/video-card";
 
 import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+const getPublicFeedVideos = unstable_cache(
+  async () => {
+    return prisma.video.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 48,
+      select: {
+        id: true,
+        title: true,
+        views: true,
+        duration: true,
+        thumbnail: true,
+        createdAt: true,
+        author: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
+  },
+  ["feed:public"],
+  { revalidate: 30 },
+);
+
+const getSubscribedFeedVideos = unstable_cache(
+  async (subscriberId) => {
+    return prisma.video.findMany({
+      where: {
+        author: {
+          subscribers: {
+            some: { subscriberId },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 48,
+      select: {
+        id: true,
+        title: true,
+        views: true,
+        duration: true,
+        thumbnail: true,
+        createdAt: true,
+        author: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
+  },
+  ["feed:subscriptions"],
+  { revalidate: 15 },
+);
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
@@ -50,6 +105,8 @@ export default async function FeedPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await connection();
+
   const { scope } = await searchParams;
   const normalizedScope = Array.isArray(scope) ? scope[0] : scope;
   const isSubscriptions = normalizedScope === "subscriptions";
@@ -61,48 +118,9 @@ export default async function FeedPage({
           redirect(`/auth?next=${encodeURIComponent("/feed?scope=subscriptions")}`);
         }
 
-        return prisma.video.findMany({
-          where: {
-            author: {
-              subscribers: {
-                some: { subscriberId: session.id },
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 48,
-          select: {
-            id: true,
-            title: true,
-            views: true,
-            duration: true,
-            thumbnail: true,
-            createdAt: true,
-            author: {
-              select: {
-                username: true,
-              },
-            },
-          },
-        });
+        return getSubscribedFeedVideos(session.id);
       })()
-    : await prisma.video.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 48,
-        select: {
-          id: true,
-          title: true,
-          views: true,
-          duration: true,
-          thumbnail: true,
-          createdAt: true,
-          author: {
-            select: {
-              username: true,
-            },
-          },
-        },
-      });
+    : await getPublicFeedVideos();
 
   const items: VideoCardData[] = videos.map((v) => ({
     id: v.id,
