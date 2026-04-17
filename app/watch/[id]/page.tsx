@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { VideoInteractions } from "@/components/videos/video-interactions";
+import { VideoOwnerTools } from "@/components/videos/video-owner-tools";
 import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -147,6 +148,14 @@ export default async function WatchPage({
           {video.description}
         </div>
       ) : null}
+
+      <VideoOwnerTools
+        videoId={video.id}
+        authorUsername={video.author.username}
+        initialTitle={video.title}
+        initialDescription={video.description}
+        isOwner={session.id === video.author.id}
+      />
 
       <VideoInteractions
         videoId={id}
