@@ -68,7 +68,10 @@ function formatViews(views: number) {
   return `${views} vues`;
 }
 
-function formatDateLabel(date: Date) {
+function formatDateLabel(input: unknown) {
+  const date = input instanceof Date ? input : new Date(input as never);
+  if (!Number.isFinite(date.getTime())) return "";
+
   const d = new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
     month: "2-digit",
