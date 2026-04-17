@@ -4,7 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 export const ACCESS_COOKIE_NAME = "wt_access";
 export const REFRESH_COOKIE_NAME = "wt_refresh";
 
-export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+export const ACCESS_TOKEN_TTL_SECONDS = 6 * 60 * 60;
 export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 const ISSUER = "watchtube";
