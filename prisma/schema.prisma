@@ -46,6 +46,8 @@ model User {
   subscriptions Subscription[] @relation("SubscriberSubscriptions")
   subscribers   Subscription[] @relation("ChannelSubscriptions")
 
+  videoViews VideoView[]
+
   @@map("user")
 }
 
@@ -68,8 +70,27 @@ model Video {
   likes         Like[]
   notifications Notification[]
 
+  viewedBy VideoView[]
+
   @@index([authorId])
   @@map("video")
+}
+
+model VideoView {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+  @@index([createdAt])
+  @@map("videoview")
 }
 
 model Comment {
